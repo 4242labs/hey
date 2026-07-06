@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# hey — attention beeps. An agent plays a short sound when it hands back to you
+# (a finished reply, or a permission prompt), but ONLY if you've been idle longer
+# than a threshold — so a fast back-and-forth stays silent and you're summoned
+# only when you've likely stepped away. Sound only: no speech, no listening.
+# Symlink onto PATH:  ln -sf <repo>/hey ~/.local/bin/hey
+set -uo pipefail
+
+# resolve own dir even when invoked through a symlink
+src="${BASH_SOURCE[0]:-$0}"
+while [ -h "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)"; src="$(readlink "$src")"
+  [ "${src#/}" = "$src" ] && src="$dir/$src"
+done
+HEY_HOME="$(cd -P "$(dirname "$src")" && pwd)"
+# shellcheck disable=SC1091
+source "$HEY_HOME/config.sh"
+
+usage() {
+  cat <<EOF
+hey — attention beeps for Claude Code agents
+
+  hey                          list the sounds
+  hey <sound> [times] [idle_s] activate for this session (previews once)
+  hey off                      deactivate for this session
+  hey beep <sound> [times]     play a sound locally now, N times (no markers)
+
+sounds: $(hey_menu | tr '\n' ' ')
+defaults: times=$HEY_TIMES  idle threshold=${HEY_THRESHOLD}s
+EOF
+}
+
+case "${1:-}" in
+  ""|list|sounds)
+    echo "sounds:"; hey_menu | sed 's/^/  /'
+    echo "usage: hey <sound> [times] [idle_s]  |  hey off"; exit 0 ;;
+  -h|--help) usage; exit 0 ;;
+  off|stop)
+    rm -f "$HEY_OUT.hey" "$HEY_OUT.turn" 2>/dev/null
+    echo "hey: off for this session"; exit 0 ;;
+  beep)  # `hey beep <sound> [times]` — play locally N times (no markers). Also the reverse endpoint.
+    bf="$(hey_lookup "${2:-}")" || { echo "hey: unknown sound '${2:-}' (run 'hey')" >&2; exit 1; }
+    [ -f "$bf" ] || { echo "hey: sound file missing: $bf" >&2; exit 1; }
+    bt="${3:-1}"; case "$bt" in ''|*[!0-9]*) bt=1 ;; esac
+    bi=0; while [ "$bi" -lt "$bt" ]; do _hey_play _hey_playfile "$bf"; bi=$((bi+1)); [ "$bi" -lt "$bt" ] && sleep "$HEY_GAP"; done
+    exit 0 ;;
+esac
+
+# `hey <sound> [times] [idle_s]` — activate for this session.
+sound="$1"
+hf="$(hey_lookup "$sound")" || { echo "hey: unknown sound '$sound' (run 'hey')" >&2; exit 1; }
+[ -f "$hf" ] || { echo "hey: sound file missing: $hf" >&2; exit 1; }
+times="${2:-$HEY_TIMES}"; thresh="${3:-$HEY_THRESHOLD}"
+case "$times"  in ''|*[!0-9]*) echo "hey: <times> must be a whole number" >&2; exit 2 ;; esac
+case "$thresh" in ''|*[!0-9]*) echo "hey: <idle_s> must be a whole number of seconds" >&2; exit 2 ;; esac
+printf '%s %s %s' "$sound" "$times" "$thresh" > "$HEY_OUT.hey"
+echo "hey: '$sound' ×$times after ${thresh}s idle — active for this session"
+# pre-warm the reverse channel so the first remote beep isn't slow
+if [ -z "${HEY_LOCAL:-}" ] && [ -n "${SSH_CONNECTION:-}" ] && [ -f "$HEY_KEY" ]; then
+  mkdir -p "$HOME/.ssh/cm" 2>/dev/null
+  ( printf '' | ssh "${_hey_ssh_opts[@]}" "${HEY_USER}@${SSH_CONNECTION%% *}" hey-warm >/dev/null 2>&1 ) &
+fi
+# preview it once so you hear what you picked (locally, even over SSH)
+_hey_play _hey_playfile "$hf"

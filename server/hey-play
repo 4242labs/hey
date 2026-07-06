@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# hey — reverse-beep endpoint. Runs as an SSH *forced command* on the operator's
+# machine (where they physically sit). A box the operator is driving remotely
+# pipes us one line:  "<sound> [times]"  (e.g. "knock 2"). We run the LOCAL `hey`
+# here, so playback happens on THIS machine. HEY_LOCAL=1 stops any re-forwarding
+# over the inbound SSH session (this box IS the destination — no loop).
+set -uo pipefail
+IFS= read -r line || exit 0
+[ -n "${line// /}" ] || exit 0
+export HEY_LOCAL=1
+# `line` is "sound [times]" (trusted: the key is restricted to this command).
+# shellcheck disable=SC2086
+exec "$HOME/.local/bin/hey" beep $line
