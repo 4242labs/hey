@@ -11,7 +11,7 @@ hooks, but the CLI works anywhere.
 ## Install
 
 ```sh
-git clone https://github.com/42piratas/hey ~/hey
+git clone https://github.com/4242labs/hey ~/hey
 ln -sf ~/hey/hey ~/.local/bin/hey        # put `hey` on PATH
 ```
 
