@@ -75,4 +75,4 @@ to use your own.
 
 ## License
 
-GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE).
+Open source — [AGPL-3.0](LICENSE). Commercial — contact ahoy@42labs.io.
