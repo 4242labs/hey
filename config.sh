@@ -124,4 +124,6 @@ _hey_emit() {  # sound [times]  -> play where the OPERATOR sits
     _hey_play _hey_playfile "$file"; i=$((i+1))
     [ "$i" -lt "$times" ] && sleep "$HEY_GAP"
   done
+  return 0   # the loop's last test is the gap check, which is false on the final
+             # play — without this, a successful local beep reports failure.
 }
