@@ -39,14 +39,7 @@ fi
 [ -n "$idle" ] || idle="$thresh"
 [ "$idle" -ge "$thresh" ] 2>/dev/null || exit 0
 
-# Fire-and-forget so we never hold up Claude's turn. Beep where the operator is:
-# reverse-forward when this box is driven over SSH (drop if that channel's down);
-# otherwise play locally.
-(
-  if [ -z "${HEY_LOCAL:-}" ] && { [ -n "$HEY_TARGET" ] || [ -n "${SSH_CONNECTION:-}" ]; }; then
-    _hey_reverse "$sound" "$times"
-  else
-    "$HEY_HOME/hey" beep "$sound" "$times"
-  fi
-) >/dev/null 2>&1 &
+# Fire-and-forget so we never hold up Claude's turn. _hey_emit owns the routing —
+# forward to the operator, or play here if this IS their machine.
+( _hey_emit "$sound" "$times" ) >/dev/null 2>&1 &
 exit 0

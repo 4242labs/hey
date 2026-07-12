@@ -76,10 +76,15 @@ _hey_play() {  # cmd args...   (e.g. _hey_play _hey_playfile file.wav)
 }
 
 # --- reverse-beep: sound where the operator sits, not on the calling box -------
-# If this shell is driven over SSH (SSH_CONNECTION set), the operator is elsewhere
-# — forward only the sound NAME to their machine's `hey-play` forced command and
-# it plays locally. Multiplexed SSH forced-command call over a dedicated
-# passphraseless key; fails closed (drops the beep) so an unattended box stays silent.
+# A beep is for a human, so it has to reach the machine the human is sitting at.
+# Set HEY_TARGET on every box the operator does NOT sit at, and HEY_LOCAL=1 on the
+# one they do (both via the gitignored .env) — then routing never depends on how the
+# agent happened to be launched. SSH_CONNECTION is only a fallback for the interactive
+# case; a daemon, a systemd unit or a re-attached tmux has none, and inferring from it
+# alone silently drops the beep on an empty room.
+# We forward only the sound NAME to the operator's `hey-play` forced command over a
+# dedicated passphraseless key. Fails closed (drops the beep) so an unattended box
+# stays silent rather than beeping to nobody.
 HEY_TARGET="${HEY_TARGET:-}"                              # explicit host/IP; empty = auto from SSH origin
 HEY_USER="${HEY_USER:-${USER:-$(id -un)}}"               # login on the operator's machine
 HEY_KEY="${HEY_KEY:-$HOME/.ssh/id_hey}"                  # dedicated key (forced to hey-play on the far end)
@@ -87,14 +92,36 @@ _hey_ssh_opts=(-i "$HEY_KEY" -o IdentitiesOnly=yes
   -o ControlMaster=auto -o ControlPath="$HOME/.ssh/cm/%r@%h:%p" -o ControlPersist=4h
   -o ConnectTimeout=2 -o ServerAliveInterval=15 -o ServerAliveCountMax=2
   -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
-_hey_reverse() {  # sound times  -> 0 if the operator's machine accepted it
+_hey_dest() {  # -> operator's host on stdout (rc0), or rc1 if the beep belongs here
   [ -n "${HEY_LOCAL:-}" ] && return 1       # we ARE the destination
   local host="$HEY_TARGET"
   [ -z "$host" ] && [ -n "${SSH_CONNECTION:-}" ] && host="${SSH_CONNECTION%% *}"
-  [ -n "$host" ] || return 1
+  [ -n "$host" ] || return 1                # nobody to forward to: single-machine setup
+  printf '%s' "$host"
+}
+_hey_reverse() {  # sound times  -> 0 if the operator's machine accepted it
+  local host
+  host="$(_hey_dest)" || return 1
   [ -n "${1:-}" ] || return 1
   command -v ssh >/dev/null 2>&1 || return 1
   [ -f "$HEY_KEY" ] || return 1
   mkdir -p "$HOME/.ssh/cm" 2>/dev/null
   printf '%s %s\n' "$1" "${2:-1}" | ssh "${_hey_ssh_opts[@]}" "${HEY_USER}@${host}" hey-beep >/dev/null 2>&1
+}
+# THE routing decision. Every path that makes a sound goes through here — hand-back
+# hook, `hey beep`, activation preview — so none of them can drift out of agreement
+# and start beeping on the wrong box. Forward if the operator is elsewhere (dropping
+# the beep if that channel is down); otherwise play right here.
+_hey_emit() {  # sound [times]  -> play where the OPERATOR sits
+  local file times i=0
+  file="$(hey_lookup "${1:-}")" || return 1
+  [ -f "$file" ] || return 1
+  times="${2:-1}"; case "$times" in ''|*[!0-9]*) times=1 ;; esac
+  if _hey_dest >/dev/null; then
+    _hey_reverse "$1" "$times"; return $?
+  fi
+  while [ "$i" -lt "$times" ]; do
+    _hey_play _hey_playfile "$file"; i=$((i+1))
+    [ "$i" -lt "$times" ] && sleep "$HEY_GAP"
+  done
 }
