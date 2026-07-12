@@ -23,7 +23,8 @@ hey — attention beeps for Claude Code agents
   hey                          list the sounds
   hey <sound> [times] [idle_s] activate for this session (previews once)
   hey off                      deactivate for this session
-  hey beep <sound> [times]     play a sound locally now, N times (no markers)
+  hey beep <sound> [times]     play a sound now, N times (no markers)
+  hey where                    show which machine the beeps will sound on
 
 sounds: $(hey_menu | tr '\n' ' ')
 defaults: times=$HEY_TIMES  idle threshold=${HEY_THRESHOLD}s
@@ -38,11 +39,21 @@ case "${1:-}" in
   off|stop)
     rm -f "$HEY_OUT.hey" "$HEY_OUT.turn" 2>/dev/null
     echo "hey: off for this session"; exit 0 ;;
-  beep)  # `hey beep <sound> [times]` — play locally N times (no markers). Also the reverse endpoint.
-    bf="$(hey_lookup "${2:-}")" || { echo "hey: unknown sound '${2:-}' (run 'hey')" >&2; exit 1; }
-    [ -f "$bf" ] || { echo "hey: sound file missing: $bf" >&2; exit 1; }
-    bt="${3:-1}"; case "$bt" in ''|*[!0-9]*) bt=1 ;; esac
-    bi=0; while [ "$bi" -lt "$bt" ]; do _hey_play _hey_playfile "$bf"; bi=$((bi+1)); [ "$bi" -lt "$bt" ] && sleep "$HEY_GAP"; done
+  where)  # where will a beep actually sound? a silent misroute is the whole bug class.
+    if dest="$(_hey_dest)"; then
+      echo "hey: beeps sound on ${HEY_USER}@${dest} (forwarded from $(hostname -s))"
+      [ -f "$HEY_KEY" ] || echo "hey: WARNING — no key at $HEY_KEY; beeps will be dropped, not played" >&2
+    elif [ -n "${HEY_LOCAL:-}" ]; then
+      echo "hey: beeps sound HERE ($(hostname -s)) — HEY_LOCAL=1, this is the operator's machine"
+    else
+      echo "hey: beeps sound HERE ($(hostname -s)) — no HEY_TARGET and no SSH origin"
+      echo "hey: if you are not sitting at this machine, set HEY_TARGET in $HEY_HOME/.env" >&2
+    fi
+    exit 0 ;;
+  beep)  # `hey beep <sound> [times]` — beep now, no markers. Also the reverse endpoint
+         # (hey-play invokes us with HEY_LOCAL=1, so _hey_emit plays here and never loops).
+    hey_lookup "${2:-}" >/dev/null || { echo "hey: unknown sound '${2:-}' (run 'hey')" >&2; exit 1; }
+    _hey_emit "${2:-}" "${3:-1}"
     exit 0 ;;
 esac
 
@@ -56,9 +67,11 @@ case "$thresh" in ''|*[!0-9]*) echo "hey: <idle_s> must be a whole number of sec
 printf '%s %s %s' "$sound" "$times" "$thresh" > "$HEY_OUT.hey"
 echo "hey: '$sound' ×$times after ${thresh}s idle — active for this session"
 # pre-warm the reverse channel so the first remote beep isn't slow
-if [ -z "${HEY_LOCAL:-}" ] && [ -n "${SSH_CONNECTION:-}" ] && [ -f "$HEY_KEY" ]; then
+if dest="$(_hey_dest)" && [ -f "$HEY_KEY" ]; then
   mkdir -p "$HOME/.ssh/cm" 2>/dev/null
-  ( printf '' | ssh "${_hey_ssh_opts[@]}" "${HEY_USER}@${SSH_CONNECTION%% *}" hey-warm >/dev/null 2>&1 ) &
+  ( printf '' | ssh "${_hey_ssh_opts[@]}" "${HEY_USER}@${dest}" hey-warm >/dev/null 2>&1 ) &
 fi
-# preview it once so you hear what you picked (locally, even over SSH)
-_hey_play _hey_playfile "$hf"
+# Preview it once — routed exactly like a real beep, so activation doubles as proof
+# the channel works. Previewing locally on a box the operator is not sitting at would
+# be a lie: it would sound correct here and then every real beep would go missing.
+_hey_emit "$sound" 1
