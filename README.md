@@ -1,5 +1,8 @@
 # hey
 
+[![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)](CONTRIBUTING.md)
+
 Attention beeps for terminal agents. When an agent hands back to you — a finished
 reply, or a permission prompt — `hey` plays a short sound, **but only if you've been
 idle longer than a threshold**. A fast back-and-forth stays silent; you're summoned
