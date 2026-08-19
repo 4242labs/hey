@@ -17,6 +17,8 @@ HEY_THRESHOLD="${HEY_THRESHOLD:-45}"     # default idle seconds before a beep fi
 HEY_TIMES="${HEY_TIMES:-1}"              # default number of plays per alert
 HEY_GAP="${HEY_GAP:-0.25}"               # seconds between repeated plays
 # One row per sound: "name|file". Names match case-insensitively.
+# A spoken alert is just another row — the player does not care whether the
+# file is a synthesized blip or a voice saying two words.
 hey_registry() {
   cat <<EOF
 ping|$HEY_DIR/ping.wav
@@ -24,6 +26,7 @@ chirp|$HEY_DIR/chirp.wav
 knock|$HEY_DIR/knock.wav
 coin|$HEY_DIR/coin.wav
 chime|$HEY_DIR/chime.wav
+yourturn|$HEY_DIR/yourturn.wav
 EOF
 }
 hey_menu() {  # just the names, one per line
