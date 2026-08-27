@@ -81,6 +81,11 @@ so nothing synthesises at alert time and no text ever leaves the machine. Point
 | `HEY_DIR` | sounds directory |
 | `HEY_TARGET` / `HEY_USER` / `HEY_KEY` | reverse-beep target host / login / SSH key |
 
+## Contributors
+
+<!-- contributors:start -->
+<!-- contributors:end -->
+
 ## License
 
 Open source — [AGPL-3.0](LICENSE). Commercial — contact ahoy@42labs.io.
