@@ -17,7 +17,7 @@ a weekend.
 - Large refactors, architecture changes, rewrites.
 - Features not discussed in an issue first. **Open the issue before you write the code** — one message, potentially a saved weekend.
 - **Model judgement about when to beep.** The rule is uniform and deterministic: any hand-back beeps iff `now − last_prompt ≥ threshold`. That is the design, not a placeholder for something smarter.
-- Speech, listening, or anything beyond a short sound. That is [johnny](https://github.com/4242labs/johnny)'s job.
+- Speech, listening, or anything beyond a short sound. That is [nina](https://github.com/4242labs/nina)'s job.
 
 ## If you need it faster
 
