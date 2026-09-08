@@ -38,6 +38,7 @@ case "${1:-}" in
   -h|--help) usage; exit 0 ;;
   off|stop)
     rm -f "$HEY_OUT.hey" "$HEY_OUT.turn" 2>/dev/null
+    : > "$HEY_OUT.hey-off"   # explicit off overrides the default-on switch for this session
     echo "hey: off for this session"; exit 0 ;;
   where)  # where will a beep actually sound? a silent misroute is the whole bug class.
     if dest="$(_hey_dest)"; then
@@ -64,6 +65,7 @@ hf="$(hey_lookup "$sound")" || { echo "hey: unknown sound '$sound' (run 'hey')" 
 times="${2:-$HEY_TIMES}"; thresh="${3:-$HEY_THRESHOLD}"
 case "$times"  in ''|*[!0-9]*) echo "hey: <times> must be a whole number" >&2; exit 2 ;; esac
 case "$thresh" in ''|*[!0-9]*) echo "hey: <idle_s> must be a whole number of seconds" >&2; exit 2 ;; esac
+rm -f "$HEY_OUT.hey-off" 2>/dev/null
 printf '%s %s %s' "$sound" "$times" "$thresh" > "$HEY_OUT.hey"
 echo "hey: '$sound' ×$times after ${thresh}s idle — active for this session"
 # pre-warm the reverse channel so the first remote beep isn't slow

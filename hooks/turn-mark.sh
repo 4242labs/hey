@@ -8,6 +8,10 @@ payload="$(cat 2>/dev/null)"
 [ -z "$sid" ] && sid="${CLAUDE_CODE_SESSION_ID:-}"
 [ -z "$sid" ] && exit 0
 CACHE="${HEY_CACHE:-${TMPDIR:-/tmp}/hey-cache}"
-[ -f "$CACHE/$sid.hey" ] || exit 0   # hey not active for this session
+SWITCH="${HEY_SWITCH:-$HOME/.config/agent-signal/on}"
+if [ ! -f "$CACHE/$sid.hey" ]; then
+  [ -f "$CACHE/$sid.hey-off" ] && exit 0   # this session explicitly turned it off
+  [ -f "$SWITCH" ] || exit 0                # not active per-session, and default-on is off
+fi
 : > "$CACHE/$sid.turn" 2>/dev/null
 exit 0

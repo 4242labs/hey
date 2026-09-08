@@ -21,9 +21,15 @@ sid="$(printf '%s' "$payload" | python3 -c 'import json,sys;print(json.load(sys.
 export HEY_HOME HEY_SESSION="$sid"
 . "$HEY_HOME/config.sh"               # defines HEY_OUT + helpers for THIS session
 
-[ -f "$HEY_OUT.hey" ] || exit 0       # hey not active for this session
-
-read -r sound times thresh < "$HEY_OUT.hey" 2>/dev/null
+if [ -f "$HEY_OUT.hey" ]; then
+  read -r sound times thresh < "$HEY_OUT.hey" 2>/dev/null
+elif [ -f "$HEY_OUT.hey-off" ]; then
+  exit 0                              # this session explicitly turned it off
+elif [ -f "$HEY_SWITCH" ]; then
+  sound="$HEY_DEFAULT_SOUND"; times="$HEY_DEFAULT_TIMES"; thresh="$HEY_DEFAULT_THRESHOLD"  # default-on, no per-session activation
+else
+  exit 0                              # not active per-session, and default-on is off
+fi
 [ -n "$sound" ] || exit 0
 times="${times:-$HEY_TIMES}"; thresh="${thresh:-$HEY_THRESHOLD}"
 file="$(hey_lookup "$sound")" || exit 0

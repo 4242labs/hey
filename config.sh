@@ -6,6 +6,10 @@
 
 HEY_CACHE="${HEY_CACHE:-${TMPDIR:-/tmp}/hey-cache}"    # marker/scratch dir (never in-repo)
 mkdir -p "$HEY_CACHE" 2>/dev/null
+# Machine-wide default-on switch, shared with nina (same path, both tools check it).
+# Presence = every new session gets the signal by default, no per-session `hey <sound>`
+# needed. A session that ran `hey off` stays off regardless (see hey CLI + hooks).
+HEY_SWITCH="${HEY_SWITCH:-$HOME/.config/agent-signal/on}"
 # Per-session token so concurrent agents isolate their markers + playback and
 # never kill each other. Falls back to PID outside Claude Code.
 HEY_SESSION="${HEY_SESSION:-${CLAUDE_CODE_SESSION_ID:-$$}}"
@@ -15,6 +19,9 @@ HEY_OUT="$HEY_CACHE/$HEY_SESSION"                       # markers: $HEY_OUT.hey 
 HEY_DIR="${HEY_DIR:-$HEY_HOME/assets}"   # where the sounds live
 HEY_THRESHOLD="${HEY_THRESHOLD:-45}"     # default idle seconds before a beep fires
 HEY_TIMES="${HEY_TIMES:-1}"              # default number of plays per alert
+HEY_DEFAULT_SOUND="${HEY_DEFAULT_SOUND:-ping}"      # the system-wide default: "beep" x2 after 20s idle
+HEY_DEFAULT_TIMES="${HEY_DEFAULT_TIMES:-2}"
+HEY_DEFAULT_THRESHOLD="${HEY_DEFAULT_THRESHOLD:-20}"
 HEY_GAP="${HEY_GAP:-0.25}"               # seconds between repeated plays
 # One row per sound: "name|file". Names match case-insensitively.
 # A spoken alert is just another row — the player does not care whether the
