@@ -12,7 +12,7 @@ mkdir -p "$HEY_CACHE" 2>/dev/null
 HEY_SWITCH="${HEY_SWITCH:-$HOME/.config/agent-signal/on}"
 # Per-session token so concurrent agents isolate their markers + playback and
 # never kill each other. Falls back to PID outside Claude Code.
-HEY_SESSION="${HEY_SESSION:-${CLAUDE_CODE_SESSION_ID:-$$}}"
+HEY_SESSION="${HEY_SESSION:-${HERMES_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-$$}}}"
 HEY_OUT="$HEY_CACHE/$HEY_SESSION"                       # markers: $HEY_OUT.hey / .turn
 
 # --- sounds -------------------------------------------------------------------
