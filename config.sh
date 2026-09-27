@@ -12,16 +12,16 @@ mkdir -p "$HEY_CACHE" 2>/dev/null
 HEY_SWITCH="${HEY_SWITCH:-$HOME/.config/agent-signal/on}"
 # Per-session token so concurrent agents isolate their markers + playback and
 # never kill each other. Falls back to PID outside Claude Code.
-HEY_SESSION="${HEY_SESSION:-${CLAUDE_CODE_SESSION_ID:-$$}}"
+HEY_SESSION="${HEY_SESSION:-${HERMES_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-$$}}}"
 HEY_OUT="$HEY_CACHE/$HEY_SESSION"                       # markers: $HEY_OUT.hey / .turn
 
 # --- sounds -------------------------------------------------------------------
 HEY_DIR="${HEY_DIR:-$HEY_HOME/assets}"   # where the sounds live
 HEY_THRESHOLD="${HEY_THRESHOLD:-45}"     # default idle seconds before a beep fires
 HEY_TIMES="${HEY_TIMES:-1}"              # default number of plays per alert
-HEY_DEFAULT_SOUND="${HEY_DEFAULT_SOUND:-ping}"      # the system-wide default: "beep" x2 after 20s idle
+HEY_DEFAULT_SOUND="${HEY_DEFAULT_SOUND:-chime}"     # the system-wide default: chime x2 after 5s idle
 HEY_DEFAULT_TIMES="${HEY_DEFAULT_TIMES:-2}"
-HEY_DEFAULT_THRESHOLD="${HEY_DEFAULT_THRESHOLD:-20}"
+HEY_DEFAULT_THRESHOLD="${HEY_DEFAULT_THRESHOLD:-5}"
 HEY_GAP="${HEY_GAP:-0.25}"               # seconds between repeated plays
 # One row per sound: "name|file". Names match case-insensitively.
 # A spoken alert is just another row — the player does not care whether the
